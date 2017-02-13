@@ -20,7 +20,8 @@ common_SRC_FILES := \
 	pngwio.c \
 	pngwrite.c \
 	pngwtran.c \
-	pngwutil.c
+	pngwutil.c \
+	mulodi4.c
 
 common_CFLAGS := -std=gnu89 -fvisibility=hidden ## -fomit-frame-pointer
 
@@ -77,10 +78,10 @@ include $(BUILD_STATIC_LIBRARY)
 # For testing
 # =====================================================
 
-include $(CLEAR_VARS)
-LOCAL_C_INCLUDES:= $(common_C_INCLUDES) external/zlib
-LOCAL_SRC_FILES:= $(common_SRC_FILES) pngtest.c
-LOCAL_MODULE := pngtest
-LOCAL_SHARED_LIBRARIES:= libz
-LOCAL_MODULE_TAGS := debug
-include $(BUILD_EXECUTABLE)
+#include $(CLEAR_VARS)
+#LOCAL_C_INCLUDES:= $(common_C_INCLUDES) external/zlib
+#LOCAL_SRC_FILES:= $(common_SRC_FILES) pngtest.c
+#LOCAL_MODULE := pngtest
+#LOCAL_SHARED_LIBRARIES:= libz
+#LOCAL_MODULE_TAGS := debug
+#include $(BUILD_EXECUTABLE)
