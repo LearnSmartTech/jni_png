@@ -1,90 +1,86 @@
-LOCAL_PATH := $(call my-dir)
+LOCAL_PATH:= $(call my-dir)
 
-# Profiling
-MY_PROF_FLAGS :=
-MY_PROF_LIB := 
-#include $(LOCAL_PATH)/android-ndk-profiler.mk
+# We need to build this for both the device (as a shared library)
+# and the host (as a static library for tools to use).
 
-# Generated code
-MY_GEN_LIB :=
-MY_GEN_FLAGS :=
-ifeq ($(WITH_FLOWGEN),true)
-    include $(LOCAL_PATH)/flowgen-code.mk
+common_SRC_FILES := \
+	png.c \
+	pngerror.c \
+	pnggccrd.c \
+	pngget.c \
+	pngmem.c \
+	pngpread.c \
+	pngread.c \
+	pngrio.c \
+	pngrtran.c \
+	pngrutil.c \
+	pngset.c \
+	pngtrans.c \
+	pngvcrd.c \
+	pngwio.c \
+	pngwrite.c \
+	pngwtran.c \
+	pngwutil.c
+
+common_CFLAGS := -std=gnu89 -fvisibility=hidden ## -fomit-frame-pointer
+
+ifeq ($(HOST_OS),windows)
+  ifeq ($(USE_MINGW),)
+    # Case where we're building windows but not under linux (so it must be cygwin)
+    # In this case, gcc cygwin doesn't recognize -fvisibility=hidden
+    $(info libpng: Ignoring gcc flag $(common_CFLAGS) on Cygwin)
+    common_CFLAGS := 
+  endif
 endif
 
-# Runner core
+common_C_INCLUDES += 
+
+common_COPY_HEADERS_TO := libpng
+common_COPY_HEADERS := png.h pngconf.h pngusr.h
+
+# For the host
+# =====================================================
+
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := librunnercore
-LOCAL_CFLAGS    := -Werror -DFLOW_EMBEDDED $(MY_PROF_FLAGS) $(MY_GEN_FLAGS)
-LOCAL_LDLIBS    := -lstdc++ -llog
+LOCAL_SRC_FILES := $(common_SRC_FILES)
+LOCAL_CFLAGS += $(common_CFLAGS)
+LOCAL_C_INCLUDES += $(common_C_INCLUDES) external/zlib
 
-LOCAL_SRC_FILES := \
-    core/ByteCodeRunner.cpp \
-    core/ByteMemory.cpp \
-    core/CodeMemory.cpp \
-    core/MemoryArea.cpp \
-    core/GarbageCollector.cpp \
-    core/Natives.cpp \
-    core/Utf8.cpp \
-    core/md5.cpp \
+LOCAL_MODULE:= libpng
+
+LOCAL_COPY_HEADERS_TO := $(common_COPY_HEADERS_TO)
+LOCAL_COPY_HEADERS := $(common_COPY_HEADERS)
+
+include $(BUILD_HOST_STATIC_LIBRARY)
+
+
+# For the device
+# =====================================================
+
+include $(CLEAR_VARS)
+LOCAL_CLANG := true
+LOCAL_SRC_FILES := $(common_SRC_FILES)
+LOCAL_CFLAGS += $(common_CFLAGS) -ftrapv
+LOCAL_C_INCLUDES += $(common_C_INCLUDES) \
+	external/zlib
+LOCAL_SHARED_LIBRARIES := \
+	libz
+
+LOCAL_MODULE:= libpng
+
+LOCAL_COPY_HEADERS_TO := $(common_COPY_HEADERS_TO)
+LOCAL_COPY_HEADERS := $(common_COPY_HEADERS)
 
 include $(BUILD_STATIC_LIBRARY)
 
-# Compound shared lib
-include $(CLEAR_VARS)
+# For testing
+# =====================================================
 
-LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/include \
-	$(LOCAL_PATH)/freetype/include \
-	$(LOCAL_PATH)/jpeg \
-	$(LOCAL_PATH)/libpng
-
-LOCAL_MODULE    := libflowrunner
-LOCAL_CFLAGS    := -Werror -DFLOW_EMBEDDED $(MY_PROF_FLAGS) $(MY_GEN_FLAGS)
-LOCAL_LDLIBS    := -lstdc++ -llog -lGLESv2 -lz
-
-LOCAL_SRC_FILES := \
-    AndroidUtils.cpp \
-    RunnerWrapper.cpp
-
-LOCAL_SRC_FILES += \
-    gl-gui/GLRenderSupport.cpp \
-    gl-gui/GLRenderer.cpp \
-    gl-gui/GLUtils.cpp \
-    gl-gui/GLClip.cpp \
-    gl-gui/GLGraphics.cpp \
-    gl-gui/GLPictureClip.cpp \
-    gl-gui/GLVideoClip.cpp \
-    gl-gui/GLTextClip.cpp \
-    gl-gui/GLWebClip.cpp \
-    gl-gui/GLCamera.cpp \
-    gl-gui/GLFont.cpp \
-    gl-gui/GLFilter.cpp \
-    gl-gui/GLSchedule.cpp \
-    gl-gui/ImageLoader.cpp \
-    utils/AbstractHttpSupport.cpp \
-    utils/AbstractSoundSupport.cpp \
-    utils/AbstractNotificationsSupport.cpp \
-    utils/AbstractLocalyticsSupport.cpp \
-    utils/AbstractInAppPurchase.cpp \
-    utils/AbstractGeolocationSupport.cpp \
-    utils/FileLocalStore.cpp \
-    utils/FileSystemInterface.cpp
-
-LOCAL_STATIC_LIBRARIES := librunnercore $(MY_PROF_LIB) $(MY_GEN_LIB)
-
-#LOCAL_STATIC_LIBRARIES += libft2 
-LOCAL_CFLAGS += -DFLOW_DFIELD_FONTS
-
-LOCAL_STATIC_LIBRARIES += libpng libjpeg
-
-include $(BUILD_SHARED_LIBRARY)
-
-# Reference external library makefiles
-MY_PATH := $(LOCAL_PATH)
-BUILD_HOST_STATIC_LIBRARY := $(CLEAR_VARS)
-
-#include $(MY_PATH)/freetype/Android.mk
-include $(MY_PATH)/libpng/Android.mk
-include $(MY_PATH)/jpeg.mk
+#include $(CLEAR_VARS)
+#LOCAL_C_INCLUDES:= $(common_C_INCLUDES) external/zlib
+#LOCAL_SRC_FILES:= $(common_SRC_FILES) pngtest.c
+#LOCAL_MODULE := pngtest
+#LOCAL_SHARED_LIBRARIES:= libz
+#LOCAL_MODULE_TAGS := debug
+#include $(BUILD_EXECUTABLE)
