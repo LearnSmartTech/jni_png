@@ -4,6 +4,7 @@ LOCAL_PATH:= $(call my-dir)
 # and the host (as a static library for tools to use).
 
 common_SRC_FILES := \
+	bebe.c \
 	png.c \
 	pngerror.c \
 	pnggccrd.c \
